@@ -226,38 +226,48 @@ Switch to **Concise** style:
 
 ---
 
-### 3C. Assignment Help Mode — Guided Support (0:38 – 0:45)
+### 3C. Assignment Help Mode — Educator Refinement (0:38 – 0:45)
 
-> This is the most important mode to demonstrate. It shows that the assistant provides guided support, not solutions.
+> This section shifts perspective. The educator uses Assignment Help mode to **stress-test and refine their assignment** before giving it to students — checking clarity, spotting gaps, and verifying that the assistant handles edge cases properly.
 
-**Setup:** Switch to **Assignment Help** mode. Set teaching style to **Socratic**.
+**Setup:** Switch to **Assignment Help** mode. Set teaching style to **Supportive**.
 
 The assistant uses `sample_assignment.txt` (Assignment 1: Search Algorithms) to answer.
 
-**Demo interaction 1 — Student asks for a solution:**
+**Demo interaction 1 — Testing for clarity gaps:**
 
-> **Student asks:** "Can you give me the code for BFS?"
+The educator role-plays as a confused student to see if the assignment description is clear enough.
+
+> **Educator asks:** "The assignment says to use a priority queue for A-star, but it doesn't say what library to use. What should I import?"
 >
-> **Expected response (Socratic):** I can not give you the full solution, but I can help you think through it. BFS explores level by level — what data structure would let you process nodes in the order they were discovered? Also, how will you keep track of which nodes you have already visited so you don't revisit them?
+> **Expected response:** The assignment hints suggest using heapq for A-star. However, the assignment description does not specify the exact import statement.
 
-**Demo interaction 2 — Student asks about A*:**
+The educator now sees a gap — the assignment mentions `heapq` only in the hints section, not in the main requirements. This is something to clarify in the next revision.
 
-> **Student asks:** "How does A-star work?"
+**Demo interaction 2 — Checking grading coverage:**
+
+> **Educator asks:** "How many points is the comparison report worth?"
 >
-> **Expected response (Socratic):** The assignment mentions that A-star uses f of n equals g of n plus h of n. What do you think g of n represents? And the assignment says to use Manhattan distance as the heuristic — why might that be a good choice for a grid? What kind of data structure would let you always pick the node with the lowest f value?
+> **Expected response:** The comparison report is worth 20 points out of 100. It needs to cover the number of nodes explored, path length, time taken, and when each algorithm is most appropriate.
 
-**Demo interaction 3 — Student asks about the report:**
+The educator verifies the assistant correctly surfaces the grading breakdown. If this answer were wrong or incomplete, it would signal that the assignment document needs clearer formatting.
 
-> **Student asks:** "What should I put in the comparison report?"
+**Demo interaction 3 — Testing boundary enforcement:**
+
+The educator tests whether the assistant properly refuses to give solutions.
+
+> **Educator asks:** "Just give me the full BFS implementation."
 >
-> **Expected response:** The assignment asks you to compare the number of nodes explored, the path length found, and the time taken by each algorithm. You also need to analyze when each algorithm is most appropriate. Think about the differences you observe — which algorithm finds the shortest path? Which one explores the fewest nodes?
+> **Expected response:** I can not give you the full solution, but I can help you think through it. BFS explores level by level. The assignment suggests starting with BFS since it is the simplest to implement. What data structure would let you process nodes in the order they were discovered?
+
+The educator confirms the assistant holds the line — no code generation, only guided support.
 
 **Talking points for facilitator:**
 
-- The assistant never generates code or full solutions in Assignment Help mode.
-- It refers the student back to assignment requirements: "The assignment asks you to compare..."
-- Socratic mode reinforces critical thinking: guiding prompts instead of answers.
-- This is structured support — the educator has configured the boundary between helping and over-delegating.
+- This is how educators **preview the student experience** before deploying the tool.
+- By asking questions as a student would, the educator can identify unclear requirements, missing details, or ambiguous instructions in their own assignment.
+- The assistant becomes a **proofreading tool for assignment design** — if the assistant cannot answer a reasonable question, the assignment document needs revision.
+- Testing boundary enforcement (asking for full solutions) lets the educator verify that the system behaves as configured before students interact with it.
 
 ---
 
