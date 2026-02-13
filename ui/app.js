@@ -423,7 +423,15 @@ class TeachingAssistantApp {
         }
         const span = this._currentBotBubble.querySelector('.bubble-text');
         if (span) {
-            span.textContent += text;
+            // Ensure spaces after sentence-ending punctuation
+            const spaced = text.replace(/([.!?])([A-Z])/g, '$1 $2');
+            const current = span.textContent;
+            const trimmed = spaced.trim();
+            if (current && trimmed) {
+                span.textContent = current.trimEnd() + ' ' + trimmed;
+            } else {
+                span.textContent = current + trimmed;
+            }
         }
         const log = document.getElementById('chatContainer');
         log.scrollTop = log.scrollHeight;
