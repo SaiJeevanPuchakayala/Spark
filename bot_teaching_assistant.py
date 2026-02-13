@@ -13,6 +13,7 @@ Open: http://localhost:7860/
 
 import asyncio
 import os
+import re
 import sys
 import json
 import time
@@ -24,13 +25,15 @@ from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from pipecat.processors.frame_processor import FrameProcessor
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.frames.frames import (
+    Frame,
     TextFrame,
     TranscriptionFrame,
     LLMMessagesFrame,
     TTSStartedFrame,
     TTSStoppedFrame,
+    TTSSpeakFrame,
     StartFrame,
     EndFrame,
 )
@@ -77,6 +80,48 @@ load_dotenv()
 
 logger.remove()
 logger.add(sys.stderr, level="DEBUG")
+
+
+# ============================================================
+# TEXT CLEANUP (strip markdown/symbols before TTS)
+# ============================================================
+
+class TTSTextCleanup(FrameProcessor):
+    """Strip markdown formatting and filenames before text reaches TTS."""
+
+    @staticmethod
+    def clean(text: str) -> str:
+        # Paired markdown: **bold**, *italic*, __bold__, _italic_, `code`
+        text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+        text = re.sub(r'__(.+?)__', r'\1', text)
+        text = re.sub(r'\*(.+?)\*', r'\1', text)
+        text = re.sub(r'_(.+?)_', r'\1', text)
+        text = re.sub(r'`(.+?)`', r'\1', text)
+        text = re.sub(r'\[(.+?)\]\(.+?\)', r'\1', text)  # [link](url)
+        # Headings, bullet lists, numbered lists
+        text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^[-*+]\s+', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)
+        # Strip any remaining asterisks, hashes, backticks
+        text = re.sub(r'[*#`]', '', text)
+        # Filenames: word.ext -> word
+        _exts = ('txt', 'md', 'pdf', 'docx', 'py', 'json', 'csv', 'html', 'xml', 'yml', 'yaml')
+        def _strip_ext(m):
+            return m.group(0).rsplit('.', 1)[0] if m.group(0).split('.')[-1].lower() in _exts else m.group(0)
+        text = re.sub(r'\w+\.\w{1,4}(?=[\s,;:.\)\]]|$)', _strip_ext, text)
+        # Collapse whitespace
+        text = re.sub(r'  +', ' ', text).strip()
+        return text
+
+    async def process_frame(self, frame: Frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
+
+        if isinstance(frame, TextFrame):
+            cleaned = self.clean(frame.text)
+            if cleaned:
+                await self.push_frame(TextFrame(text=cleaned), direction)
+        else:
+            await self.push_frame(frame, direction)
 
 
 # ============================================================
@@ -142,7 +187,7 @@ MODE_BEHAVIORS = {
 MODE — Course FAQ:
 You answer logistical questions about the course: syllabus, schedule,
 policies, grading, deadlines, office hours, etc.
-Be factual and reference specific documents when possible.
+Be factual. If the information comes from a specific document, mention it naturally (e.g. "according to the syllabus") but never say the filename.
 """,
     "assignment": """
 MODE — Assignment Help:
@@ -179,6 +224,11 @@ RULES:
 - Speak naturally, as if talking to a student in office hours
 - NO filler phrases ("Sure!", "Of course!", "I'd be happy to help!")
 - Get straight to the answer
+- CRITICAL: Your output is spoken aloud via text-to-speech. NEVER use:
+  - Markdown formatting (no **, *, #, `, -, or bullet symbols)
+  - Filenames or file extensions (say "the syllabus" not "syllabus.txt")
+  - Special characters, code blocks, or lists with symbols
+  - Write everything as plain conversational sentences
 """
 
     # Teaching style
@@ -286,6 +336,7 @@ async def run_bot(connection):
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
     sentence_aggregator = SentenceAggregator()
+    tts_cleanup = TTSTextCleanup()
 
     runner = PipelineRunner()
 
@@ -298,12 +349,19 @@ async def run_bot(connection):
             context_aggregator.user(),
             llm,
             sentence_aggregator,
+            tts_cleanup,
             tts,
             transport.output(),
             context_aggregator.assistant(),
         ]),
         params=PipelineParams(allow_interruptions=True),
     )
+
+    # Speak the greeting when the client connects
+    @transport.event_handler("on_client_connected")
+    async def on_connected(transport, webrtc_connection):
+        greeting = "Hello! I'm Spark, your AI Teaching Companion. Ask me anything about the course."
+        await task.queue_frame(TTSSpeakFrame(text=greeting, append_to_context=True))
 
     await runner.run(task)
 
