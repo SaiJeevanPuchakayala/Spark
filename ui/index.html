@@ -536,6 +536,64 @@
             opacity: 0.4;
         }
 
+        .bubble .timestamp {
+            font-size: 0.58rem;
+            color: var(--text-caption);
+            margin-top: 6px;
+            display: block;
+            opacity: 0.6;
+        }
+
+        .bubble.user .timestamp {
+            text-align: right;
+        }
+
+        /* Activity bar */
+        .activity-toggle {
+            cursor: pointer;
+            color: var(--text-caption);
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 6px;
+        }
+
+        .activity-toggle:hover {
+            color: var(--text-secondary);
+        }
+
+        .activity-toggle.active {
+            color: var(--accent);
+        }
+
+        .activity-bar {
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-pure);
+            max-height: 80px;
+            overflow-y: auto;
+            padding: 8px 24px;
+        }
+
+        .activity-bar::-webkit-scrollbar { width: 3px; }
+        .activity-bar::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 100px; }
+
+        .activity-log .activity-item {
+            font-size: 0.68rem;
+            color: var(--text-caption);
+            padding: 2px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .activity-item .activity-time {
+            color: var(--text-caption);
+            opacity: 0.5;
+            font-size: 0.6rem;
+            flex-shrink: 0;
+        }
+
         /* ============ RIGHT: SETTINGS PANEL ============ */
         .settings-panel {
             width: 320px;
@@ -913,13 +971,14 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                 Conversation
                             </span>
+                            <span class="activity-toggle" id="activityToggle" title="Show activity log">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            </span>
                         </div>
-                        <div id="chatContainer" class="transcript-feed">
-                            <div class="bubble assistant">
-                                <span class="bubble-label">Spark</span>
-                                Hello! I'm Spark, your AI Teaching Companion. Ask me anything about the course.
-                            </div>
+                        <div id="activityBar" class="activity-bar" style="display:none;">
+                            <div id="activityLog" class="activity-log"></div>
                         </div>
+                        <div id="chatContainer" class="transcript-feed"></div>
                     </div>
                 </div>
             </div>

@@ -11,6 +11,8 @@ class TeachingAssistantApp {
         this.dataChannel = null;
         this.isConnected = false;
 
+        this._currentBotBubble = null;
+
         this.config = {
             mode: 'faq',
             teachingStyle: 'supportive',
@@ -57,6 +59,17 @@ class TeachingAssistantApp {
                 e.currentTarget.classList.add('active');
                 this.setStyle(e.currentTarget.dataset.style);
             });
+        });
+
+        // Activity toggle
+        document.getElementById('activityToggle')?.addEventListener('click', () => {
+            const bar = document.getElementById('activityBar');
+            const toggle = document.getElementById('activityToggle');
+            if (bar && toggle) {
+                const visible = bar.style.display !== 'none';
+                bar.style.display = visible ? 'none' : 'block';
+                toggle.classList.toggle('active', !visible);
+            }
         });
 
         // Reload Materials
@@ -348,17 +361,24 @@ class TeachingAssistantApp {
 
     setupDataChannel(channel) {
         channel.onopen = () => {
-            console.log('Data channel open');
+            console.log('Data channel open, state:', channel.readyState);
             this.pingInterval = setInterval(() => {
                 if (channel.readyState === 'open') channel.send('ping:' + Date.now());
             }, 1000);
         };
 
+        channel.onclose = () => console.log('Data channel closed');
+        channel.onerror = (e) => console.error('Data channel error:', e);
+
         channel.onmessage = (e) => {
             try {
                 const msg = JSON.parse(e.data);
-                if (msg.label === 'rtvi-ai') this.handleRTVI(msg);
-            } catch (err) { }
+                if (msg.label === 'rtvi-ai') {
+                    this.handleRTVI(msg);
+                }
+            } catch (err) {
+                // ping responses or non-JSON
+            }
         };
     }
 
@@ -378,15 +398,44 @@ class TeachingAssistantApp {
 
             case 'bot-tts-started':
                 this.setOrbSpeaking(true);
+                this._currentBotBubble = null;
                 break;
 
             case 'bot-tts-text':
-                this.addMessage('assistant', data.text);
+                this.appendBotMessage(data.text);
                 break;
 
             case 'bot-stopped-speaking':
                 this.setOrbSpeaking(false);
+                this._finalizeBotBubble();
                 break;
+        }
+    }
+
+    appendBotMessage(text) {
+        if (!this._currentBotBubble) {
+            const div = document.createElement('div');
+            div.className = 'bubble assistant';
+            div.innerHTML = `<span class="bubble-label">Spark</span><span class="bubble-text"></span>`;
+            const log = document.getElementById('chatContainer');
+            log.appendChild(div);
+            this._currentBotBubble = div;
+        }
+        const span = this._currentBotBubble.querySelector('.bubble-text');
+        if (span) {
+            span.textContent += text;
+        }
+        const log = document.getElementById('chatContainer');
+        log.scrollTop = log.scrollHeight;
+    }
+
+    _finalizeBotBubble() {
+        if (this._currentBotBubble) {
+            const ts = document.createElement('span');
+            ts.className = 'timestamp';
+            ts.textContent = this._formatTime();
+            this._currentBotBubble.appendChild(ts);
+            this._currentBotBubble = null;
         }
     }
 
@@ -425,20 +474,39 @@ class TeachingAssistantApp {
     }
 
     addMessage(role, text) {
+        if (role === 'system') {
+            this.addActivity(text);
+            return;
+        }
+
         const div = document.createElement('div');
         div.className = `bubble ${role}`;
+        const time = this._formatTime();
 
         if (role === 'assistant') {
-            div.innerHTML = `<span class="bubble-label">Spark</span>${text}`;
+            div.innerHTML = `<span class="bubble-label">Spark</span><span class="bubble-text">${text}</span><span class="timestamp">${time}</span>`;
         } else if (role === 'user') {
-            div.innerHTML = `<span class="bubble-label" style="text-align:right">You</span>${text}`;
-        } else {
-            div.textContent = text;
+            div.innerHTML = `<span class="bubble-label" style="text-align:right">You</span><span class="bubble-text">${text}</span><span class="timestamp">${time}</span>`;
         }
 
         const log = document.getElementById('chatContainer');
         log.appendChild(div);
         log.scrollTop = log.scrollHeight;
+    }
+
+    addActivity(text) {
+        const log = document.getElementById('activityLog');
+        if (!log) return;
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.innerHTML = `<span class="activity-time">${this._formatTime()}</span>${text}`;
+        log.appendChild(item);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    _formatTime() {
+        const now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 }
 

@@ -63,8 +63,7 @@ from pipecat.transports.base_transport import TransportParams
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 
-# Frameworks
-from pipecat.processors.frameworks.rtvi import RTVIProcessor, RTVIConfig
+# Frameworks (RTVI is auto-added by PipelineTask)
 
 # Local imports
 from knowledge_base import (
@@ -334,7 +333,6 @@ async def run_bot(connection):
     global global_context
     global_context = context
 
-    rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
     sentence_aggregator = SentenceAggregator()
     tts_cleanup = TTSTextCleanup()
 
@@ -344,7 +342,6 @@ async def run_bot(connection):
         pipeline=Pipeline([
             transport.input(),
             vad,
-            rtvi,
             stt,
             context_aggregator.user(),
             llm,
