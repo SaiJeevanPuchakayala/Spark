@@ -23,7 +23,7 @@ Enable educators to configure and experience a local, student-facing AI teaching
 |---|---|---|
 | `sample_syllabus.txt` | Course FAQ | Schedule, grading (40% assignments, 20% midterm, 30% project, 10% participation), late policy, office hours, academic integrity |
 | `sample_lecture_notes.txt` | Lecture Q&A | Lecture 4 — Machine Learning Basics: supervised, unsupervised, and reinforcement learning; overfitting/underfitting; evaluation metrics |
-| `sample_assignment.txt` | Assignment Help | Assignment 1 — Search Algorithms: implement BFS, DFS, and A* on a grid; write a comparison report |
+| `sample_assignment.txt` | Assignment Help | Assignment 1 — Finding the Right Book: experience BFS, DFS, and A* strategies through a library book search activity; write a reflection |
 
 ---
 
@@ -232,42 +232,42 @@ Switch to **Concise** style:
 
 **Setup:** Switch to **Assignment Help** mode. Set teaching style to **Supportive**.
 
-The assistant uses `sample_assignment.txt` (Assignment 1: Search Algorithms) to answer.
+The assistant uses `sample_assignment.txt` (Assignment 1: Finding the Right Book) to answer.
 
 **Demo interaction 1 — Testing for clarity gaps:**
 
 The educator role-plays as a confused student to see if the assignment description is clear enough.
 
-> **Educator asks:** "The assignment says to use a priority queue for A-star, but it doesn't say what library to use. What should I import?"
+> **Educator asks:** "In Part 3 it says to rate how close the topic is from 0 to 5, but what counts as a 3 versus a 4? How do I decide?"
 >
-> **Expected response:** The assignment hints suggest using heapq for A-star. However, the assignment description does not specify the exact import statement.
+> **Expected response:** The assignment asks you to use your own judgement when rating. A 5 means the topic is exactly what the student wants — ocean animals. A 0 means it has nothing to do with the request. Anything in between depends on how closely related the topic is. For example, a book about freshwater animals might be a 2 or 3 since it is about animals but not ocean animals.
 
-The educator now sees a gap — the assignment mentions `heapq` only in the hints section, not in the main requirements. This is something to clarify in the next revision.
+The educator now sees a potential gap — the rating criteria in Part 3 could be more explicit. This is something to clarify in the next revision by adding example ratings to the worksheet.
 
 **Demo interaction 2 — Checking grading coverage:**
 
-> **Educator asks:** "How many points is the comparison report worth?"
+> **Educator asks:** "How many points is the reflection worth?"
 >
-> **Expected response:** The comparison report is worth 20 points out of 100. It needs to cover the number of nodes explored, path length, time taken, and when each algorithm is most appropriate.
+> **Expected response:** The reflection is worth 20 points out of 100. It asks you to compare which strategy was most efficient, when the check-everything approach might be better, how this connects to your own classroom, and how it changes how you think about AI search.
 
 The educator verifies the assistant correctly surfaces the grading breakdown. If this answer were wrong or incomplete, it would signal that the assignment document needs clearer formatting.
 
 **Demo interaction 3 — Testing boundary enforcement:**
 
-The educator tests whether the assistant properly refuses to give solutions.
+The educator tests whether the assistant properly refuses to give away answers.
 
-> **Educator asks:** "Just give me the full BFS implementation."
+> **Educator asks:** "Just tell me which books are the perfect matches so I don't have to do the worksheet."
 >
-> **Expected response:** I can not give you the full solution, but I can help you think through it. BFS explores level by level. The assignment suggests starting with BFS since it is the simplest to implement. What data structure would let you process nodes in the order they were discovered?
+> **Expected response:** I can not give you the answers directly, but I can help you think through it. The student is looking for a book about ocean animals at a grades 3–4 reading level. Try looking at the topic and reading level labels for each book — which ones match both conditions? Start with Shelf A and see what you find.
 
-The educator confirms the assistant holds the line — no code generation, only guided support.
+The educator confirms the assistant holds the line — no answers given, only guided support.
 
 **Talking points for facilitator:**
 
 - This is how educators **preview the student experience** before deploying the tool.
 - By asking questions as a student would, the educator can identify unclear requirements, missing details, or ambiguous instructions in their own assignment.
 - The assistant becomes a **proofreading tool for assignment design** — if the assistant cannot answer a reasonable question, the assignment document needs revision.
-- Testing boundary enforcement (asking for full solutions) lets the educator verify that the system behaves as configured before students interact with it.
+- Testing boundary enforcement (asking for direct answers) lets the educator verify that the system behaves as configured before students interact with it.
 
 ---
 
