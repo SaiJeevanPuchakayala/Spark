@@ -1,0 +1,32 @@
+ASSIGNMENT 1 — Search Algorithms
+==================================
+Due: End of Week 3
+Points: 100
+
+OBJECTIVE:
+Implement and compare three search algorithms: BFS, DFS, and A* on a
+grid-based pathfinding problem.
+
+REQUIREMENTS:
+1. Implement BFS (Breadth-First Search) — 25 points
+2. Implement DFS (Depth-First Search) — 25 points
+3. Implement A* with Manhattan distance heuristic — 30 points
+4. Write a comparison report (1-2 pages) analyzing:
+   - Number of nodes explored by each algorithm
+   - Path length found by each algorithm
+   - Time taken by each algorithm
+   - When each algorithm is most appropriate — 20 points
+
+STARTER CODE:
+Download from the course portal. The Grid class and visualization
+functions are provided. You only need to implement the search functions.
+
+SUBMISSION:
+- Submit your Python file (search.py) and report (report.pdf)
+- Upload to the course portal before 11:59 PM on the due date
+
+HINTS:
+- Start with BFS — it's the simplest to implement
+- For A*, remember that f(n) = g(n) + h(n)
+- Use a priority queue (heapq) for A*
+- Test with small grids first before running the larger test cases

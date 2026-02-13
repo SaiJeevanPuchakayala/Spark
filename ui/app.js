@@ -1,8 +1,9 @@
 /**
- * AirOwl Controller
+ * AI Teaching Assistant — Frontend Controller
+ * AI PC for Educators Course
  */
 
-class ClimateBuddyApp {
+class TeachingAssistantApp {
     constructor() {
         this.peerConnection = null;
         this.localStream = null;
@@ -10,25 +11,21 @@ class ClimateBuddyApp {
         this.dataChannel = null;
         this.isConnected = false;
 
-        // State
         this.config = {
-            customPrompt: '',
-            features: { rag: true, iot: true, safety: true },
-            llmParams: { temperature: 0.0, max_tokens: 50 },
-            sensorData: {},
-            identity: {}
+            mode: 'faq',
+            teachingStyle: 'supportive',
+            customInstructions: '',
+            courseName: '',
+            llmParams: { temperature: 0.3, max_tokens: 150 },
         };
 
-        this.metrics = { stt: [], llm: [], tts: [] };
-
         this.init();
-        this.startBlinking();
     }
 
     init() {
         this.bindEvents();
-        this.loadConfig(); // Fetch initial state from server
-        console.log('🦉 AirOwl Initialized');
+        this.loadConfig();
+        console.log('Spark initialized');
     }
 
     bindEvents() {
@@ -44,67 +41,161 @@ class ClimateBuddyApp {
         // Config Deploy
         document.getElementById('deployConfigBtn')?.addEventListener('click', () => this.deployConfig());
 
-        // Scenario Buttons
-        document.querySelectorAll('.tag-btn[data-scenario]').forEach(btn => {
+        // Mode Buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                // Remove active from all
-                document.querySelectorAll('.tag-btn[data-scenario]').forEach(b => b.classList.remove('active'));
-                // Add to current
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
                 e.currentTarget.classList.add('active');
-
-                this.loadScenarioUI(e.currentTarget.dataset.scenario);
+                this.setMode(e.currentTarget.dataset.mode);
             });
+        });
+
+        // Style Buttons
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                this.setStyle(e.currentTarget.dataset.style);
+            });
+        });
+
+        // Reload Materials
+        document.getElementById('reloadMaterialsBtn')?.addEventListener('click', () => this.reloadMaterials());
+
+        // Sliders
+        document.getElementById('llmTokens')?.addEventListener('input', (e) => {
+            document.getElementById('tokensDisplay').textContent = e.target.value;
+            this.config.llmParams.max_tokens = parseInt(e.target.value);
+        });
+
+        document.getElementById('llmTemp')?.addEventListener('input', (e) => {
+            document.getElementById('tempDisplay').textContent = e.target.value;
+            this.config.llmParams.temperature = parseFloat(e.target.value);
         });
     }
 
     switchTab(btn) {
-        // Update Nav
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        // Update Views
         const tabId = btn.dataset.tab;
         document.querySelectorAll('.view-panel').forEach(view => view.classList.remove('active'));
 
-        const targetView = 'view-config'; // Only config view remains
-        document.getElementById(targetView).classList.add('active');
+        if (tabId === 'dashboard') {
+            document.getElementById('view-dashboard').classList.add('active');
+        } else {
+            document.getElementById('view-config').classList.add('active');
+        }
     }
 
     // ==========================================
-    // EYES ANIMATION & LOGIC
+    // ORB ANIMATION
     // ==========================================
 
-    startBlinking() {
-        // Blink every 3-6 seconds
-        const blink = () => {
-            const eyes = document.querySelectorAll('.eye');
-            eyes.forEach(e => e.classList.add('blink'));
-            setTimeout(() => {
-                eyes.forEach(e => e.classList.remove('blink'));
-                // Next blink random interval
-                setTimeout(blink, Math.random() * 3000 + 3000);
-            }, 100); // 100ms closed duration
-        };
-        setTimeout(blink, 2000);
+    setOrbSpeaking(speaking) {
+        const container = document.getElementById('orbContainer');
+        const status = document.getElementById('orbStatus');
+
+        if (speaking) {
+            container?.classList.add('speaking');
+            if (status) status.textContent = 'Speaking...';
+        } else {
+            container?.classList.remove('speaking');
+            if (status) status.textContent = 'Ready';
+        }
     }
 
-    setEyeStatus(aqi) {
-        const eyes = document.querySelectorAll('.eye');
-        eyes.forEach(e => {
-            e.classList.remove('status-good', 'status-moderate', 'status-bad');
-            if (aqi <= 50) e.classList.add('status-good'); // Green
-            else if (aqi <= 100) e.classList.add('status-moderate'); // Orange
-            else e.classList.add('status-bad'); // Red
+    setOrbListening(listening) {
+        const status = document.getElementById('orbStatus');
+        if (listening && status) {
+            status.textContent = 'Listening...';
+        }
+    }
+
+    // ==========================================
+    // MODE & STYLE
+    // ==========================================
+
+    async setMode(mode) {
+        this.config.mode = mode;
+
+        // Update mode badge
+        const modeLabels = { faq: 'Course FAQ', assignment: 'Assignment Help', lecture: 'Lecture Q&A' };
+        const badge = document.getElementById('modeBadge');
+        if (badge) badge.textContent = modeLabels[mode] || mode;
+
+        // Send to backend
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode }),
         });
+
+        this.addMessage('system', `Switched to ${modeLabels[mode] || mode} mode`);
+        this.updateMaterialsUI();
     }
 
-    setAvatarSpeaking(speaking) {
-        const eyes = document.querySelectorAll('.eye');
-        eyes.forEach(e => e.classList.toggle('speaking', speaking));
+    async setStyle(style) {
+        this.config.teachingStyle = style;
+
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ teachingStyle: style }),
+        });
+
+        this.addMessage('system', `Teaching style: ${style}`);
     }
 
     // ==========================================
-    // CONFIGURATION SYNC
+    // MATERIALS
+    // ==========================================
+
+    async reloadMaterials() {
+        const btn = document.getElementById('reloadMaterialsBtn');
+        if (btn) {
+            btn.textContent = 'Reloading...';
+            btn.disabled = true;
+        }
+
+        try {
+            const res = await fetch('/api/materials/reload', { method: 'POST' });
+            const data = await res.json();
+
+            if (data.materials) {
+                this._materials = data.materials;
+                this.updateMaterialsUI();
+            }
+
+            this.addMessage('system', 'Course materials reloaded');
+        } catch (e) {
+            console.error('Failed to reload materials', e);
+        } finally {
+            if (btn) {
+                btn.textContent = 'Reload Materials';
+                btn.disabled = false;
+            }
+        }
+    }
+
+    updateMaterialsUI() {
+        const container = document.getElementById('materialsList');
+        if (!container || !this._materials) return;
+
+        const files = this._materials[this.config.mode] || [];
+
+        if (files.length === 0) {
+            container.innerHTML = '<span class="materials-empty">No files loaded for this mode. Add documents to course_materials/</span>';
+            return;
+        }
+
+        container.innerHTML = files.map(f =>
+            `<div class="file-item"><span class="file-icon">&#9679;</span> ${f}</div>`
+        ).join('');
+    }
+
+    // ==========================================
+    // CONFIGURATION
     // ==========================================
 
     async loadConfig() {
@@ -112,12 +203,36 @@ class ClimateBuddyApp {
             const res = await fetch('/api/config');
             const data = await res.json();
 
-            // Apply to UI
-            if (data.customPrompt) {
-                document.getElementById('customPrompt').value = data.customPrompt;
+            if (data.mode) {
+                this.config.mode = data.mode;
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === data.mode);
+                });
+                const modeLabels = { faq: 'Course FAQ', assignment: 'Assignment Help', lecture: 'Lecture Q&A' };
+                const badge = document.getElementById('modeBadge');
+                if (badge) badge.textContent = modeLabels[data.mode] || data.mode;
             }
 
-            if (data.sensorData) this.updateSensorUI(data.sensorData);
+            if (data.teachingStyle) {
+                this.config.teachingStyle = data.teachingStyle;
+                document.querySelectorAll('.style-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.style === data.teachingStyle);
+                });
+            }
+
+            if (data.customInstructions) {
+                document.getElementById('customInstructions').value = data.customInstructions;
+            }
+
+            if (data.courseName) {
+                this.config.courseName = data.courseName;
+                document.getElementById('courseName').value = data.courseName;
+            }
+
+            if (data.materials) {
+                this._materials = data.materials;
+                this.updateMaterialsUI();
+            }
 
         } catch (e) {
             console.error('Failed to load config', e);
@@ -125,77 +240,33 @@ class ClimateBuddyApp {
     }
 
     async deployConfig() {
-        // Gather data from UI
         const payload = {
-            customPrompt: document.getElementById('customPrompt').value,
-            features: { rag: true, iot: true, safety: true } // Hardcoded default features
+            customInstructions: document.getElementById('customInstructions')?.value || '',
+            courseName: document.getElementById('courseName')?.value || '',
+            llmParams: this.config.llmParams,
         };
 
         try {
             const btn = document.getElementById('deployConfigBtn');
-            const originalText = btn.innerHTML;
-            btn.textContent = '⏳ Updating...';
+            const originalText = btn?.textContent;
+            if (btn) btn.textContent = 'Saving...';
 
             await fetch('/api/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
             });
 
-            // Notify
-            btn.textContent = '✅ Updated!';
-            setTimeout(() => btn.innerHTML = originalText, 2000);
+            if (btn) {
+                btn.textContent = 'Saved!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            }
 
-            this.addMessage('system', '🔄 AirOwl directives updated.');
+            this.addMessage('system', 'Settings updated');
 
         } catch (e) {
             console.error('Deploy failed', e);
-            alert('Failed to update: ' + e.message);
         }
-    }
-
-    loadScenarioUI(scenario) {
-        const scenarios = {
-            'good': { aqi: 35, pm25: 25, temperature: 24, location: 'Forest Reserve' },
-            'moderate': { aqi: 85, pm25: 65, temperature: 30, location: 'City Park' },
-            'hazardous': { aqi: 380, pm25: 350, temperature: 18, location: 'Traffic Zone' }
-        };
-
-        const data = scenarios[scenario];
-        if (data) {
-            this.deploySensorData(data);
-        }
-    }
-
-    // Helper to send sensor data to backend immediately
-    async deploySensorData(data) {
-        await fetch('/api/config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sensorData: data })
-        });
-        this.updateSensorUI(data);
-    }
-
-    updateSensorUI(data) {
-        if (!data) return;
-        document.getElementById('aqiValue').textContent = data.aqi || '--';
-        document.getElementById('pm25Value').textContent = data.pm25 || '--';
-        document.getElementById('tempValue').textContent = (data.temperature || '--') + '°';
-        document.getElementById('sensorLocation').textContent = data.location || '--';
-
-        // Update Eyes
-        this.setEyeStatus(data.aqi || 0);
-
-        // Color coding for AQI Circle
-        const aqi = data.aqi || 0;
-        const circle = document.querySelector('.air-quality-circle');
-
-        let color = '#00E676';
-        if (aqi > 50) color = '#FFAB00';
-        if (aqi > 200) color = '#FF1744';
-
-        if (circle) circle.style.borderColor = color;
     }
 
     // ==========================================
@@ -205,14 +276,14 @@ class ClimateBuddyApp {
     async connect() {
         try {
             this.updateStatus('connecting');
-            this.addMessage('system', 'Waking up AirOwl...');
+            this.addMessage('system', 'Starting session...');
 
             this.localStream = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation: true, noiseSuppression: true }
+                audio: { echoCancellation: true, noiseSuppression: true },
             });
 
             this.peerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
             });
 
             this.dataChannel = this.peerConnection.createDataChannel('rtvi', { ordered: true });
@@ -240,16 +311,26 @@ class ClimateBuddyApp {
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
-            // Wait for ICE
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Wait for ICE gathering
+            if (this.peerConnection.iceGatheringState !== 'complete') {
+                await new Promise(resolve => {
+                    const checkState = () => {
+                        if (this.peerConnection.iceGatheringState === 'complete') {
+                            this.peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                            resolve();
+                        }
+                    };
+                    this.peerConnection.addEventListener('icegatheringstatechange', checkState);
+                });
+            }
 
             const response = await fetch('/api/offer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sdp: this.peerConnection.localDescription.sdp,
-                    type: this.peerConnection.localDescription.type
-                })
+                    type: this.peerConnection.localDescription.type,
+                }),
             });
 
             const answer = await response.json();
@@ -261,7 +342,7 @@ class ClimateBuddyApp {
         } catch (e) {
             console.error('Connection failed', e);
             this.updateStatus('disconnected');
-            this.addMessage('system', '❌ Link failed: ' + e.message);
+            this.addMessage('system', 'Connection failed: ' + e.message);
         }
     }
 
@@ -272,6 +353,7 @@ class ClimateBuddyApp {
                 if (channel.readyState === 'open') channel.send('ping:' + Date.now());
             }, 1000);
         };
+
         channel.onmessage = (e) => {
             try {
                 const msg = JSON.parse(e.data);
@@ -282,49 +364,20 @@ class ClimateBuddyApp {
 
     handleRTVI(msg) {
         const { type, data } = msg;
-        const now = Date.now();
 
         switch (type) {
             case 'user-started-speaking':
-                this.metrics.speechStart = now;
-                // Reset latency markers
-                this.metrics.vadEnd = null;
-                this.metrics.sttEnd = null;
-                this.metrics.llmStart = null;
-                break;
-
-            case 'user-stopped-speaking':
-                this.metrics.vadEnd = now;
+                this.setOrbListening(true);
                 break;
 
             case 'user-transcription':
                 if (data.final) {
                     this.addMessage('user', data.text);
-                    this.metrics.sttEnd = now;
-
-                    // STT Latency: VAD End -> Text Available
-                    // Fallback to Speech Start if VAD End missing
-                    const refInfo = this.metrics.vadEnd || this.metrics.speechStart;
-                    if (refInfo) {
-                        this.recordMetric('stt', now - refInfo);
-                    }
-                }
-                break;
-
-            case 'bot-llm-started':
-                this.metrics.llmStart = now;
-                // LLM Latency: Text Available -> LLM Processing Start
-                if (this.metrics.sttEnd) {
-                    this.recordMetric('llm', now - this.metrics.sttEnd);
                 }
                 break;
 
             case 'bot-tts-started':
-                // TTS Latency: LLM Start -> Audio Start (First Token to Audio)
-                if (this.metrics.llmStart) {
-                    this.recordMetric('tts', now - this.metrics.llmStart);
-                }
-                this.setAvatarSpeaking(true);
+                this.setOrbSpeaking(true);
                 break;
 
             case 'bot-tts-text':
@@ -332,25 +385,8 @@ class ClimateBuddyApp {
                 break;
 
             case 'bot-stopped-speaking':
-                this.setAvatarSpeaking(false);
+                this.setOrbSpeaking(false);
                 break;
-        }
-    }
-
-    recordMetric(type, value) {
-        if (!this.metrics[type]) this.metrics[type] = [];
-        this.metrics[type].push(value);
-        if (this.metrics[type].length > 10) this.metrics[type].shift();
-
-        // Show INSTANT value 
-        const latestInfo = value;
-
-        // Update DOM
-        const el = document.getElementById(type + 'Time');
-        if (el) {
-            el.textContent = latestInfo;
-            el.style.fontWeight = '800';
-            setTimeout(() => el.style.fontWeight = '600', 300);
         }
     }
 
@@ -362,14 +398,14 @@ class ClimateBuddyApp {
         this.updateStatus('disconnected');
         document.getElementById('startBtn').style.display = 'block';
         document.getElementById('stopBtn').style.display = 'none';
-        this.addMessage('system', 'Session Ended');
-        this.setAvatarSpeaking(false);
+        this.addMessage('system', 'Session ended');
+        this.setOrbSpeaking(false);
     }
 
     onConnected() {
         this.isConnected = true;
         this.updateStatus('connected');
-        this.addMessage('system', 'AirOwl is Listening...');
+        this.addMessage('system', 'Session active. Start talking!');
     }
 
     onDisconnected() {
@@ -380,18 +416,22 @@ class ClimateBuddyApp {
     updateStatus(status) {
         const el = document.getElementById('connectionStatus');
         el.className = `connection-status ${status}`;
-        el.querySelector('.status-text').textContent = status === 'connected' ? 'LIVE' : status === 'connecting' ? 'SYNCING...' : 'STANDBY';
+        const statusText = {
+            'connected': 'ACTIVE',
+            'connecting': 'CONNECTING...',
+            'disconnected': 'STANDBY',
+        };
+        el.querySelector('.status-text').textContent = statusText[status] || 'STANDBY';
     }
 
     addMessage(role, text) {
         const div = document.createElement('div');
         div.className = `bubble ${role}`;
 
-        // Add label if AI
         if (role === 'assistant') {
-            div.innerHTML = `<span class="bubble-label">AIROWL</span>${text}`;
+            div.innerHTML = `<span class="bubble-label">Spark</span>${text}`;
         } else if (role === 'user') {
-            div.innerHTML = `<span class="bubble-label" style="text-align:right">YOU</span>${text}`;
+            div.innerHTML = `<span class="bubble-label" style="text-align:right">You</span>${text}`;
         } else {
             div.textContent = text;
         }
@@ -403,5 +443,5 @@ class ClimateBuddyApp {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new ClimateBuddyApp();
+    window.app = new TeachingAssistantApp();
 });

@@ -9,9 +9,8 @@ venv/
 *.bin
 *.pt
 *.onnx
+models/
 hf_cache/
-kokoro-v0_19.onnx
-voices.bin
 
 # VS Code
 .vscode/

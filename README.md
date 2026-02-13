@@ -1,8 +1,11 @@
-# AI Teaching Assistant — Voice Agent
+# Spark — AI Teaching Companion
 
-> A **voice-powered AI Teaching Assistant** that helps educators reduce repetitive workload. Students speak questions, the bot answers using your course materials — running 100% locally on your machine.
+> **Activity: Building Teaching Assistants**
+> Design simple agents that can handle academic research workflows.
+>
+> Part of the **AI PC for Educators** course module.
 
-Built for the **Intel AI PC for Educators** course module.
+A voice-powered AI Teaching Companion that helps educators reduce repetitive workload. Students speak questions, the bot answers using your course materials — running 100% locally on your machine.
 
 ---
 
@@ -12,36 +15,107 @@ Built for the **Intel AI PC for Educators** course module.
 - **Ollama** — [Download here](https://ollama.com)
 - A working **microphone**
 - **Chrome** or Edge browser
-- ~4 GB free disk space (for AI models)
+- ~5 GB free disk space (for AI models and dependencies)
 
 ---
 
-## Setup (One Time)
+## Setup
 
-### 1. Install Ollama and pull the model
+### Step 1 — Install Ollama
+
+Download and install from [ollama.com](https://ollama.com), then pull the model:
 
 ```bash
 ollama pull gemma3:4b
 ```
 
-### 2. Install Python dependencies
+> First pull downloads ~2.5 GB. After that it's cached locally.
+
+### Step 2 — Install Python Dependencies
+
+Open a terminal in the project folder and run:
+
+```bash
+python -m venv venv
+```
+
+Activate the virtual environment:
+
+```powershell
+# Windows (PowerShell — default terminal)
+.\venv\Scripts\Activate.ps1
+
+# Windows (Command Prompt)
+venv\Scripts\activate.bat
+
+# macOS/Linux
+source venv/bin/activate
+```
+
+> You should see `(venv)` at the start of your terminal prompt. If you don't, the activation didn't work — try the other command for your terminal type.
+
+Then install dependencies:
 
 ```bash
 pip install -r requirements.txt
+```
+
+### Step 3 — Configure (Optional)
+
+Copy the example config:
+
+```powershell
+# Windows (PowerShell)
+Copy-Item .env.example .env
+
+# Windows (Command Prompt)
+copy .env.example .env
+
+# macOS/Linux
+cp .env.example .env
+```
+
+Edit `.env` to customize:
+
+```
+OLLAMA_URL=http://127.0.0.1:11434/v1
+LLM_MODEL=gemma3:4b
+COURSE_NAME=Introduction to AI
+DEFAULT_MODE=faq
+BOT_PORT=7860
 ```
 
 ---
 
 ## Running
 
-You need **two terminals** open at the same time:
+You need **two terminals** open at the same time.
 
-**Terminal 1** — Start Ollama:
+### Terminal 1 — Start Ollama
+
 ```bash
 ollama serve
 ```
 
-**Terminal 2** — Start the bot:
+> On Windows, Ollama may already be running in the background after installation. If you see "address already in use", that's fine — it means Ollama is already running and you can skip this step.
+
+### Terminal 2 — Start the bot
+
+Make sure you activate the virtual environment first:
+
+```powershell
+# Windows (PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# Windows (Command Prompt)
+venv\Scripts\activate.bat
+
+# macOS/Linux
+source venv/bin/activate
+```
+
+Then start the bot:
+
 ```bash
 python bot_teaching_assistant.py
 ```
@@ -76,7 +150,7 @@ All processing happens on your machine. No data leaves your computer.
 
 ## Adding Your Course Materials
 
-Drop your documents into the `course_materials/` folder:
+Delete the sample files in `course_materials/` and replace them with your own documents:
 
 ```
 course_materials/
@@ -95,9 +169,12 @@ course_materials/
 
 **Supported formats:** `.txt`, `.md`, `.pdf`, `.docx`
 
+> `.pdf` and `.docx` require optional packages. Uncomment `PyPDF2` and `python-docx` in `requirements.txt` and run `pip install -r requirements.txt` again to enable them.
+
 After adding files, click the reload button in the UI — no restart needed.
 
 **Tips:**
+
 - Keep files concise (the AI has a ~12,000 character context window per mode)
 - Use descriptive filenames — the bot mentions document names in answers
 - Plain text (`.txt`) works best for accuracy
@@ -106,11 +183,11 @@ After adding files, click the reload button in the UI — no restart needed.
 
 ## Three Modes
 
-| Mode | Purpose | Behavior |
-|------|---------|----------|
-| **Course FAQ** | Syllabus, policies, schedule | Answers logistical questions from root docs |
-| **Assignment Help** | Guided homework support | Gives hints, never gives direct answers |
-| **Lecture Q&A** | 24/7 office hours | Explains concepts from lecture notes |
+| Mode                | Purpose                      | Behavior                                    |
+| ------------------- | ---------------------------- | ------------------------------------------- |
+| **Course FAQ**      | Syllabus, policies, schedule | Answers logistical questions from root docs |
+| **Assignment Help** | Guided homework support      | Gives hints, never gives direct answers     |
+| **Lecture Q&A**     | 24/7 office hours            | Explains concepts from lecture notes        |
 
 Switch modes using the right panel in the UI.
 
@@ -120,15 +197,16 @@ Switch modes using the right panel in the UI.
 
 ### Teaching Styles
 
-| Style | Behavior |
-|-------|----------|
+| Style          | Behavior                               |
+| -------------- | -------------------------------------- |
 | **Supportive** | Warm, encouraging, suggests next steps |
-| **Socratic** | Guides with questions, gives hints |
-| **Concise** | Brief 1-2 sentence answers only |
+| **Socratic**   | Guides with questions, gives hints     |
+| **Concise**    | Brief 1-2 sentence answers only        |
 
 ### Custom Instructions
 
 In the Settings tab, add educator instructions like:
+
 - "Always relate concepts to real-world examples"
 - "Encourage students to visit office hours"
 - "Focus on practical applications over theory"
@@ -161,7 +239,7 @@ python test_services.py
 ## Project Structure
 
 ```
-AI_Voice_Tutor/
+Spark/
     |-- bot_teaching_assistant.py   # Main bot (run this)
     |-- knowledge_base.py           # Document loader & context injection
     |-- test_services.py            # Service diagnostics
@@ -186,15 +264,17 @@ AI_Voice_Tutor/
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| "Cannot reach Ollama" | Open another terminal and run `ollama serve` |
-| No microphone access | Allow mic in browser (Chrome: click lock icon in address bar) |
-| Bot not responding | Make sure `ollama serve` is still running in the other terminal |
-| Slow first response | Normal — model loads into memory on first query |
-| No audio output | Check speaker/headphone volume; try a different browser |
-| "Connection failed" | Make sure port 7860 is not used by another app |
-| Knowledge not loading | Check file extensions (.txt, .md, .pdf, .docx only) |
+| Problem               | Solution                                                        |
+| --------------------- | --------------------------------------------------------------- |
+| "Cannot reach Ollama" | Open another terminal and run `ollama serve`                    |
+| "address already in use" | Ollama is already running — skip `ollama serve` and go to Terminal 2 |
+| No microphone access  | Allow mic in browser (Chrome: click lock icon in address bar)   |
+| Bot not responding    | Make sure `ollama serve` is still running in the other terminal |
+| Slow first response   | Normal — model loads into memory on first query                 |
+| No audio output       | Check speaker/headphone volume; try a different browser         |
+| "Connection failed"   | Make sure port 7860 is not used by another app                  |
+| Knowledge not loading | Check file extensions (.txt, .md only by default)               |
+| PowerShell won't activate venv | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` then try again |
 
 ---
 
